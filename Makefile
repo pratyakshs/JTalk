@@ -1,11 +1,9 @@
-DOXYGEN = doxygen
 PROJECT_ROOT := $(CURDIR)
 SRCDIR = $(PROJECT_ROOT)/src
-DOCDIR = $(PROJECT_ROOT)/doc
 CLASSDIR = $(PROJECT_ROOT)/objs
 ######################################
-.PHONY: doc clean compile
-all:clean compile doc
+.PHONY: clean compile
+all:clean compile 
 compile:
 	@mkdir -p objs
 	@cd src;javac -Xlint -d ../objs ./jtalkG09.java;
@@ -14,3 +12,4 @@ clean:
 	@echo "Cleaning up..."
 	@rm -rf $(CLASSDIR)
 	@rm -rf *.jar
+	@rm -rf MANIFEST.MF

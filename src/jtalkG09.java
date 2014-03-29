@@ -1,108 +1,96 @@
 import java.io.IOException;
 import java.net.Socket;
 
-import Jcs296JTalk.JChatComm;
-import Jcs296JTalk.JClient;
-import Jcs296JTalk.JPacket;
-import Jcs296JTalk.JServer;
+import cs296JTalk.JChatComm;
+import cs296JTalk.JClient;
+import cs296JTalk.JPacket;
+import cs296JTalk.JReadThread;
+import cs296JTalk.JServer;
+import cs296JTalk.JWriteThread;
 
 public class jtalkG09 {
 
-	static Socket mySocket;
 
 	public static void main(String[] args) throws IOException, ClassNotFoundException{
 
-		if (args.length == 0) {
-			JServer myServer = new JServer(5050);
-			myServer.acceptConnection();
-			mySocket = myServer.getSocket();
-			
-			System.out.println("ajshdas");
+		Socket mySocket;
+		JPacket packet;
+		
+		JChatComm chatComm = new JChatComm();
+		
+		try{	
+			if (args.length == 0) {
 
-//			InputStream ix = mySocket.getInputStream();
-//			DataInputStream in = new DataInputStream(ix);
-//			System.out.println(in.readUTF());
+				try{
+					JServer myServer = new JServer(5123);
+					myServer.acceptConnection();
+					mySocket = myServer.getSocket();
 
-//			PrintWriter out =
-//					new PrintWriter(mySocket.getOutputStream(), true);
-//			BufferedReader in =
-//					new BufferedReader(
-//							new InputStreamReader(mySocket.getInputStream()));
-//			BufferedReader stdIn =
-//					new BufferedReader(
-//							new InputStreamReader(System.in));
-//			
-//			out.println("server says hello");
-//			System.out.println(in.readLine());
+					chatComm = new JChatComm();
 
-			//			BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-			//			String x = reader.readLine();
-			//			OutputStream ox = mySocket.getOutputStream();
-			//			DataOutputStream out = new DataOutputStream(ox);
-			//			out.writeUTF(x);
+					packet = chatComm.receiveMessage(mySocket);
+					packet.printPacket();
+
+					String x = "Sure. Let us begin.";
+					packet = new JPacket(x, new java.sql.Timestamp((new java.util.Date()).getTime()), "Server");
+					chatComm.sendMessage(packet, mySocket);
+
+					JWriteThread t1 = new JWriteThread(mySocket, chatComm, packet, "Server");
+					t1.start();
+
+					JReadThread t2 = new JReadThread(mySocket, chatComm, packet);
+					t2.start();
+
+					while(t1.isAlive() && t2.isAlive());
+					chatComm.getChatSession().printLog();
+					
+				}
+				catch(java.io.EOFException e){
+					System.out.println("Client disconnected.");
+				}
+
+			}
+			else {
+
+				try{
+					JClient myClient = new JClient();
+					myClient.callServer(args[0], 5123);
+					mySocket = myClient.getSocket();
 
 
+					chatComm = new JChatComm();
 
-			JChatComm chatComm = new JChatComm();
-			
-			chatComm.readMessage(mySocket);
-			String x = "SERVER says hello";
-			JPacket packet = new JPacket(x, new java.sql.Timestamp((new java.util.Date()).getTime()));
-			chatComm.sendMessage(packet, mySocket);
-			while(true){}
-			
+					String x = "Free to chat?";
+					packet = new JPacket(x, new java.sql.Timestamp((new java.util.Date()).getTime()), "Client");
+
+					chatComm.sendMessage(packet, mySocket);
+
+					packet = chatComm.receiveMessage(mySocket);
+					packet.printPacket();
+
+					mySocket.setSoTimeout(0);
+
+
+					JWriteThread t1 = new JWriteThread(mySocket, chatComm, packet, "Client");
+					t1.start();
+
+					JReadThread t2 = new JReadThread(mySocket, chatComm, packet);
+					t2.start();			
+					
+					while(t1.isAlive() && t2.isAlive());
+					chatComm.getChatSession().printLog();
+					
+				}
+				catch(java.net.SocketTimeoutException t){
+					System.out.println("Timed out.");
+				}
+
+			}
 		}
-		else {
-			JClient myClient = new JClient();
-			myClient.callServer(args[0], 5050);
-			
-			//			mySocket = new Socket(args[0], 5050);
-			//			
-			//			System.out.println("ajshdas");
-			//			BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-			//			String x = reader.readLine();
-			//			OutputStream ox = mySocket.getOutputStream();
-			//			DataOutputStream out = new DataOutputStream(ox);
-			//			out.writeUTF(x);
-			//			
-			//			InputStream ix = mySocket.getInputStream();
-			//			DataInputStream in = new DataInputStream(ix);
-			//			System.out.println(in.readUTF());
+	catch(Exception e){
 
-
-			mySocket = myClient.getSocket();
-			
-//			PrintWriter out =
-//					new PrintWriter(mySocket.getOutputStream(), true);
-//			BufferedReader in =
-//					new BufferedReader(
-//							new InputStreamReader(mySocket.getInputStream()));
-//			out.println("client says hello");
-//			System.out.println(in.readLine());
-			
-			JPacket packet;
-			JChatComm chatComm = new JChatComm();
-			
-
-			String x = "client says hello";
-			packet = new JPacket(x, new java.sql.Timestamp((new java.util.Date()).getTime()));
-			
-			System.out.println(1);
-			chatComm.sendMessage(packet, mySocket);
-
-			chatComm.readMessage(mySocket);
-
-
-			//			
-			//			while(!x.trim().equals("")){
-			//				 packet = new JPacket(x, new Timestamp((new java.util.Date()).getTime()));
-			//
-			//				chatComm.sendMessage(packet, mySocket);
-			//				chatComm.readMessage(mySocket);
-			//			}
-			while(true){}
-		}
-	//mySocket.close();
 	}
+}
 
 }
+
